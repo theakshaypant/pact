@@ -1,0 +1,17 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - misspell
+    - unconvert
+  settings:
+    errcheck:
+      exclude-functions:
+        # CLI output writes to the injected writer: a failed write to a
+        # terminal or buffer has no meaningful recovery path.
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
