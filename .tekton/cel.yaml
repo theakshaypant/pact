@@ -1,0 +1,89 @@
+---
+# CEL match on feature-titled PRs against main; builds and smoke-tests the
+# binary. on-cel-expression replaces on-event/on-target-branch.
+# Try: pact run --pr-title "feat: demo"
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: feature-readiness
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/on-cel-expression: "event == \"pull_request\" && target_branch == \"main\" && body.pull_request.title.startsWith(\"feat:\")"
+spec:
+  params:
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
+    - name: event-type
+      value: "{{ event_type }}"
+    - name: sender
+      value: "{{ sender }}"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: revision
+      - name: event-type
+      - name: sender
+    tasks:
+      - name: build
+        params:
+          - name: event-type
+            value: $(params.event-type)
+          - name: sender
+            value: $(params.sender)
+        taskSpec:
+          params:
+            - name: event-type
+            - name: sender
+          workspaces:
+            - name: source
+          steps:
+            - name: clone-repository
+              displayName: "Clone Repository"
+              ref:
+                resolver: hub
+                params:
+                  - name: catalog
+                    value: git-clone-stepaction
+                  - name: type
+                    value: artifact
+                  - name: kind
+                    value: stepaction
+                  - name: name
+                    value: git-clone
+                  - name: version
+                    value: "1.7.0"
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: compile
+              image: docker.io/golang:1.27
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+              workingDir: $(workspaces.source.path)
+              script: |
+                #!/usr/bin/env bash
+                set -euo pipefail
+                git config --global --add safe.directory "$(workspaces.source.path)"
+                go build -o bin/pact ./cmd/pact
+            - name: smoke
+              image: docker.io/golang:1.27
+              workingDir: $(workspaces.source.path)
+              script: |
+                #!/usr/bin/env bash
+                set -euo pipefail
+                ./bin/pact help > /dev/null
+                echo "$(params.event-type) from $(params.sender): the binary builds and runs"
+    workspaces:
+      - name: source
+  workspaces:
+    - name: source
+      emptyDir: {}

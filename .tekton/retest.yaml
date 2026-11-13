@@ -1,0 +1,75 @@
+---
+# On-demand e2e suite, triggered by a /test-e2e PR comment.
+# Try: pact run --comment "/test-e2e"
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: on-demand-e2e
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/on-comment: "^/test-e2e"
+spec:
+  params:
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
+    - name: comment
+      value: "{{ trigger_comment }}"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: revision
+      - name: comment
+    tasks:
+      - name: e2e
+        params:
+          - name: comment
+            value: $(params.comment)
+        taskSpec:
+          params:
+            - name: comment
+          workspaces:
+            - name: source
+          steps:
+            - name: fetch-source
+              displayName: "Fetch Source"
+              ref:
+                resolver: hub
+                params:
+                  - name: catalog
+                    value: git-clone-stepaction
+                  - name: type
+                    value: artifact
+                  - name: kind
+                    value: stepaction
+                  - name: name
+                    value: git-clone
+                  - name: version
+                    value: "1.7.0"
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: run
+              image: docker.io/golang:1.27
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+              workingDir: $(workspaces.source.path)
+              script: |
+                #!/usr/bin/env bash
+                set -euo pipefail
+                echo "triggered by comment: $(params.comment)"
+                git config --global --add safe.directory "$(workspaces.source.path)"
+                go test -count=1 ./test
+    workspaces:
+      - name: source
+  workspaces:
+    - name: source
+      emptyDir: {}
