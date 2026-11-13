@@ -21,8 +21,13 @@ type prepared struct {
 // prepare opens the repository, takes a snapshot, builds the synthetic
 // event and constructs the engine, printing warnings to errOut. Every
 // command that needs an event (match, resolve, run) goes
-// through here.
-func prepare(ctx context.Context, d deps, g *globalFlags, ef eventFlags) (*prepared, error) {
+// through here. The custom params are parsed first so a bad flag errors
+// before any git work.
+func prepare(ctx context.Context, d deps, g *globalFlags, ef eventFlags, pf paramFlags) (*prepared, error) {
+	params, err := pf.toParams()
+	if err != nil {
+		return nil, err
+	}
 	insp, err := d.openGit(g.dir)
 	if err != nil {
 		return nil, err
@@ -46,7 +51,7 @@ func prepare(ctx context.Context, d deps, g *globalFlags, ef eventFlags) (*prepa
 		fmt.Fprintf(d.errOut, "warning: HEAD is detached; the simulated event uses the literal branch \"HEAD\"\n")
 	}
 	return &prepared{
-		engine:    d.newEngine(g.verbose),
+		engine:    d.newEngine(g.verbose, params),
 		event:     ev,
 		tektonDir: tektonPath(snap.RepoRoot, g.tektonDir),
 		repoRoot:  snap.RepoRoot,

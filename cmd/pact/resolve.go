@@ -8,6 +8,7 @@ import (
 
 func newResolveCmd(d deps, g *globalFlags) *cobra.Command {
 	var ef eventFlags
+	var pf paramFlags
 	cmd := &cobra.Command{
 		Use:   "resolve",
 		Short: "Print the hydrated PipelineRun YAML matching the simulated event",
@@ -17,11 +18,15 @@ placeholders are substituted and referenced local tasks and pipelines are
 inlined into a self-contained PipelineRun. Output is a multi-document YAML
 stream on stdout.
 
+Custom params (--param, --param-file) substitute {{ name }} placeholders
+and are merged into the PipelineRuns' spec.params, so the output previews
+exactly what ` + "`pact run`" + ` would submit with them.
+
 Remote task references are not fetched (offline mode); they fail with an
 error instead. Redirect stderr to keep the YAML stream clean.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			p, err := prepare(cmd.Context(), d, g, ef)
+			p, err := prepare(cmd.Context(), d, g, ef, pf)
 			if err != nil {
 				return err
 			}
@@ -36,5 +41,6 @@ error instead. Redirect stderr to keep the YAML stream clean.`,
 		},
 	}
 	ef.bind(cmd)
+	pf.bind(cmd)
 	return cmd
 }
