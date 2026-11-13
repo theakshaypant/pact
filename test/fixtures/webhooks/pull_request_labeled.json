@@ -1,0 +1,61 @@
+{
+  "action": "labeled",
+  "label": {
+    "name": "kind/lgtm"
+  },
+  "number": 1,
+  "pull_request": {
+    "labels": [
+      {
+        "name": "kind/lgtm"
+      }
+    ],
+    "number": 1,
+    "state": "open",
+    "title": "feat: add local testing",
+    "user": {
+      "login": "Dev Person"
+    },
+    "head": {
+      "ref": "feature",
+      "sha": "abc123def4567890abc123def4567890abc12345",
+      "repo": {
+        "clone_url": "git@github.com:example/repo.git",
+        "default_branch": "main",
+        "full_name": "example/repo",
+        "html_url": "https://github.com/example/repo",
+        "name": "repo",
+        "owner": {
+          "login": "example"
+        }
+      }
+    },
+    "base": {
+      "ref": "main",
+      "sha": "fedcba0987654321fedcba0987654321fedcba09",
+      "repo": {
+        "clone_url": "git@github.com:example/repo.git",
+        "default_branch": "main",
+        "full_name": "example/repo",
+        "html_url": "https://github.com/example/repo",
+        "name": "repo",
+        "owner": {
+          "login": "example"
+        }
+      }
+    }
+  },
+  "repository": {
+    "clone_url": "git@github.com:example/repo.git",
+    "default_branch": "main",
+    "full_name": "example/repo",
+    "html_url": "https://github.com/example/repo",
+    "name": "repo",
+    "owner": {
+      "login": "example"
+    }
+  },
+  "sender": {
+    "login": "Dev Person"
+  }
+}

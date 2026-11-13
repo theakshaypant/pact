@@ -1,0 +1,28 @@
+{
+  "ref": "refs/heads/feature",
+  "before": "fedcba0987654321fedcba0987654321fedcba09",
+  "after": "abc123def4567890abc123def4567890abc12345",
+  "head_commit": {
+    "author": {
+      "name": "Dev Person"
+    },
+    "id": "abc123def4567890abc123def4567890abc12345",
+    "message": "feat: add local testing"
+  },
+  "pusher": {
+    "name": "Dev Person"
+  },
+  "repository": {
+    "clone_url": "git@github.com:example/repo.git",
+    "default_branch": "main",
+    "full_name": "example/repo",
+    "html_url": "https://github.com/example/repo",
+    "name": "repo",
+    "owner": {
+      "login": "example"
+    }
+  },
+  "sender": {
+    "login": "Dev Person"
+  }
+}

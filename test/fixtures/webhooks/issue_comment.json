@@ -1,0 +1,33 @@
+{
+  "action": "created",
+  "issue": {
+    "number": 1,
+    "state": "open",
+    "title": "feat: add local testing",
+    "user": {
+      "login": "Dev Person"
+    },
+    "pull_request": {
+      "url": "https://github.com/example/repo/pull/1"
+    }
+  },
+  "comment": {
+    "body": "/test please",
+    "user": {
+      "login": "Dev Person"
+    }
+  },
+  "repository": {
+    "clone_url": "git@github.com:example/repo.git",
+    "default_branch": "main",
+    "full_name": "example/repo",
+    "html_url": "https://github.com/example/repo",
+    "name": "repo",
+    "owner": {
+      "login": "example"
+    }
+  },
+  "sender": {
+    "login": "Dev Person"
+  }
+}

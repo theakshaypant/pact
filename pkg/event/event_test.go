@@ -126,6 +126,88 @@ func TestBuildPush(t *testing.T) {
 	assert.Equal(t, want, ev.Payload)
 }
 
+func TestBuildLabeled(t *testing.T) {
+	ev, err := Build(githubSnapshot(), Options{Labels: []string{"kind/lgtm"}})
+	require.NoError(t, err)
+
+	assert.Equal(t, PullRequest, ev.Type)
+	assert.Equal(t, KindLabeled, ev.Kind)
+	assert.Equal(t, "labeled", ev.Action)
+	assert.Equal(t, "pull_request", ev.Webhook)
+	assert.Equal(t, []string{"kind/lgtm"}, ev.Labels)
+	assert.Equal(t, http.Header{"X-GitHub-Event": []string{"pull_request"}}, ev.Headers)
+
+	// Labels appear both as pull_request.labels objects and, per GitHub's
+	// labeled webhook shape, as the top-level added label.
+	pr := ev.Payload["pull_request"].(map[string]any)
+	assert.Equal(t, []any{map[string]any{"name": "kind/lgtm"}}, pr["labels"])
+	assert.Equal(t, map[string]any{"name": "kind/lgtm"}, ev.Payload["label"])
+
+	// Multiple labels: all are listed, the last is the "added" one.
+	ev, err = Build(githubSnapshot(), Options{Labels: []string{"a", "b"}})
+	require.NoError(t, err)
+	pr = ev.Payload["pull_request"].(map[string]any)
+	assert.Equal(t, []any{map[string]any{"name": "a"}, map[string]any{"name": "b"}}, pr["labels"])
+	assert.Equal(t, map[string]any{"name": "b"}, ev.Payload["label"])
+
+	// Surrounding whitespace is trimmed so it never breaks on-label
+	// matching.
+	ev, err = Build(githubSnapshot(), Options{Labels: []string{"  kind/lgtm\t"}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"kind/lgtm"}, ev.Labels)
+}
+
+func TestBuildComment(t *testing.T) {
+	ev, err := Build(githubSnapshot(), Options{Comment: "/test please"})
+	require.NoError(t, err)
+
+	assert.Equal(t, PullRequest, ev.Type)
+	assert.Equal(t, KindComment, ev.Kind)
+	assert.Equal(t, "created", ev.Action)
+	assert.Equal(t, "/test please", ev.Comment)
+	assert.Equal(t, "issue_comment", ev.Webhook)
+	assert.Equal(t, "main", ev.BaseBranch)
+	assert.Equal(t, http.Header{"X-GitHub-Event": []string{"issue_comment"}}, ev.Headers)
+
+	repo := repoPayloadMap()
+	want := map[string]any{
+		"action": "created",
+		"issue": map[string]any{
+			"number": 1,
+			"title":  "feat: add local testing",
+			"state":  "open",
+			"user":   map[string]any{"login": "Dev Person"},
+			"pull_request": map[string]any{
+				"url": "https://github.com/example/repo/pull/1",
+			},
+		},
+		"comment":    map[string]any{"body": "/test please", "user": map[string]any{"login": "Dev Person"}},
+		"repository": repo,
+		"sender":     map[string]any{"login": "Dev Person"},
+	}
+	assert.Equal(t, want, ev.Payload)
+}
+
+func TestBuildLabelCommentValidation(t *testing.T) {
+	tests := []struct {
+		name string
+		opts Options
+		want string
+	}{
+		{"labels on a push", Options{Type: Push, Labels: []string{"x"}}, "only to pull_request events"},
+		{"comment on a push", Options{Type: Push, Comment: "hi"}, "only to pull_request events"},
+		{"labels and a comment", Options{Labels: []string{"x"}, Comment: "hi"}, "cannot be combined"},
+		{"empty label", Options{Labels: []string{"x", " "}}, "must not be empty"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Build(githubSnapshot(), tt.opts)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.want)
+		})
+	}
+}
+
 func TestBuildNonGitHubRemote(t *testing.T) {
 	snap := githubSnapshot()
 	snap.RemoteURL = "https://gitlab.com/group/sub/repo.git"
@@ -193,6 +275,8 @@ func TestJSONGolden(t *testing.T) {
 	}{
 		{"pull_request", Options{}, "../../test/fixtures/webhooks/pull_request.json"},
 		{"push", Options{Type: Push}, "../../test/fixtures/webhooks/push.json"},
+		{"pull_request labeled", Options{Labels: []string{"kind/lgtm"}}, "../../test/fixtures/webhooks/pull_request_labeled.json"},
+		{"issue_comment", Options{Comment: "/test please"}, "../../test/fixtures/webhooks/issue_comment.json"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ev, err := Build(githubSnapshot(), tc.opts)
