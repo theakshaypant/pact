@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,8 +14,9 @@ import (
 
 // fakeClusterManager records calls and replays scripted errors.
 type fakeClusterManager struct {
-	gotProvider   string // provider the manager was constructed for
-	gotKubeconfig string // explicit kubeconfig path, when one was given
+	gotProvider   string    // provider the manager was constructed for
+	gotKubeconfig string    // explicit kubeconfig path, when one was given
+	gotProgress   io.Writer // progress writer the manager was constructed with
 
 	upCalled bool
 	upOpts   cluster.UpOptions
@@ -54,6 +56,7 @@ func runClusterCLI(t *testing.T, mgr *fakeClusterManager, newClusterErr error, a
 		newCluster: func(opts cluster.Options) (clusterManager, error) {
 			mgr.gotProvider = opts.Provider
 			mgr.gotKubeconfig = opts.Kubeconfig
+			mgr.gotProgress = opts.Progress
 			if newClusterErr != nil {
 				return nil, newClusterErr
 			}
@@ -76,6 +79,7 @@ func TestUpDefaultsToExternalAndPrintsReady(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "external", mgr.gotProvider)
 	assert.Empty(t, mgr.gotKubeconfig, "no --kubeconfig means discovery")
+	assert.NotNil(t, mgr.gotProgress, "the progress writer must be wired or up goes quiet")
 	assert.True(t, mgr.upCalled)
 	assert.Empty(t, mgr.upOpts.TektonVersion, "no --tekton-version means the embedded manifest")
 	assert.Contains(t, out, "tekton is ready")

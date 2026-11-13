@@ -22,7 +22,7 @@ place unless --force is passed. For kind it is the whole ` + cluster.DefaultName
 cluster in Docker.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts, err := clusterOptions(cmd, provider, kubeconfig)
+			opts, err := clusterOptions(cmd, d.out, provider, kubeconfig)
 			if err != nil {
 				return err
 			}

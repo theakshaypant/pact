@@ -42,7 +42,7 @@ is reused untouched (only verified); --tekton-version fetches a different
 official release and installs it instead (requires network).`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts, err := clusterOptions(cmd, provider, kubeconfig)
+			opts, err := clusterOptions(cmd, d.out, provider, kubeconfig)
 			if err != nil {
 				return err
 			}
