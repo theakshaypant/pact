@@ -32,13 +32,28 @@ type Engine interface {
 }
 
 type engine struct {
-	log *zap.SugaredLogger
+	log    *zap.SugaredLogger
+	params Params
+}
+
+// Option configures an Engine.
+type Option func(*engine)
+
+// WithParams supplies custom param values to the engine: they substitute
+// {{ name }} placeholders while parsing the .tekton manifests and are
+// merged into every matched PipelineRun's spec.params at resolve time.
+func WithParams(p Params) Option {
+	return func(e *engine) { e.params = p }
 }
 
 // New creates an Engine. A nil logger is replaced with a no-op logger.
-func New(log *zap.SugaredLogger) Engine {
+func New(log *zap.SugaredLogger, opts ...Option) Engine {
 	if log == nil {
 		log = zap.NewNop().Sugar()
 	}
-	return &engine{log: log}
+	e := &engine{log: log}
+	for _, opt := range opts {
+		opt(e)
+	}
+	return e
 }

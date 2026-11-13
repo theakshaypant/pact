@@ -48,13 +48,15 @@ func templateEventType(k event.Kind) string {
 }
 
 // templateDict builds the flat parameter dictionary substituted into
-// {{ key }} placeholders. The keys mirror PAC's standard params.
-func templateDict(ev *event.Event) map[string]string {
+// {{ key }} placeholders. The built-in keys mirror PAC's standard params;
+// custom params extend the dictionary (NewParams rejects shadowing a
+// built-in key, so custom entries can never overwrite one).
+func templateDict(ev *event.Event, custom Params) map[string]string {
 	repoURL := ev.CloneURL
 	if repoURL == "" {
 		repoURL = ev.HeadURL
 	}
-	return map[string]string{
+	d := map[string]string{
 		"revision":            ev.SHA,
 		"repo_url":            repoURL,
 		"repo_owner":          ev.Owner,
@@ -68,6 +70,10 @@ func templateDict(ev *event.Event) map[string]string {
 		"trigger_comment":     singleLine(ev.Comment),
 		"pull_request_labels": singleLine(strings.Join(ev.Labels, "\n")),
 	}
+	for k, v := range custom {
+		d[k] = v
+	}
+	return d
 }
 
 // singleLine escapes newlines the way PAC renders trigger_comment and

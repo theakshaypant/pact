@@ -34,6 +34,7 @@ type evaluation struct {
 	perFile    map[string]resolve.TektonTypes // hydrated types keyed by file
 	matches    []Match                        // sorted by file name
 	matchedPRs []*tektonv1.PipelineRun        // the matched PipelineRun objects
+	files      []pipelineFile                 // the raw files, sorted by path
 }
 
 // evaluate loads the tekton directory, hydrates and parses each file, and
@@ -52,7 +53,23 @@ func (e *engine) evaluate(ctx context.Context, tektonDir string, ev *event.Event
 	if err != nil {
 		return nil, err
 	}
-	return &evaluation{perFile: perFile, matches: matches, matchedPRs: matchedPRs}, nil
+	return &evaluation{perFile: perFile, matches: matches, matchedPRs: matchedPRs, files: files}, nil
+}
+
+// matchedFileContent returns the raw content of the files that
+// contributed a match, in sorted file order.
+func (e *evaluation) matchedFileContent() []string {
+	matched := map[string]bool{}
+	for _, m := range e.matches {
+		matched[m.File] = true
+	}
+	var out []string
+	for _, f := range e.files {
+		if matched[f.Name] {
+			out = append(out, f.Content)
+		}
+	}
+	return out
 }
 
 // Match returns the .tekton PipelineRuns matching the event, sorted by file.
@@ -68,7 +85,7 @@ func (e *engine) Match(ctx context.Context, tektonDir string, ev *event.Event) (
 // returning per-file TektonTypes so matches keep their file attribution.
 // Files are keyed by name; iteration order is the sorted file order.
 func (e *engine) parseFiles(ctx context.Context, files []pipelineFile, ev *event.Event) (map[string]resolve.TektonTypes, error) {
-	dict := templateDict(ev)
+	dict := templateDict(ev, e.params)
 	filesNS := filesMap(toPACFiles(ev.ChangedFiles))
 	perFile := make(map[string]resolve.TektonTypes, len(files))
 	for _, f := range files {

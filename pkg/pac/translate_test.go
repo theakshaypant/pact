@@ -45,7 +45,7 @@ func TestToInfoEventFreshPerCall(t *testing.T) {
 
 func TestTemplateDict(t *testing.T) {
 	ev := testEvent(t, event.PullRequest)
-	dict := templateDict(ev)
+	dict := templateDict(ev, nil)
 
 	assert.Equal(t, map[string]string{
 		"revision":            "abcdef",
@@ -66,17 +66,26 @@ func TestTemplateDict(t *testing.T) {
 func TestTemplateDictLabeledAndComment(t *testing.T) {
 	t.Run("labeled event carries its labels", func(t *testing.T) {
 		ev := matchEventOpts(t, event.Options{Labels: []string{"kind/lgtm", "a/b"}}, nil)
-		dict := templateDict(ev)
+		dict := templateDict(ev, nil)
 		assert.Equal(t, "pull_request_labeled", dict["event_type"])
 		assert.Equal(t, "kind/lgtm\\na/b", dict["pull_request_labels"])
 	})
 
 	t.Run("comment event renders the PAC-visible on-comment type and body", func(t *testing.T) {
 		ev := matchEventOpts(t, event.Options{Comment: "/test\nplease"}, nil)
-		dict := templateDict(ev)
+		dict := templateDict(ev, nil)
 		assert.Equal(t, "on-comment", dict["event_type"])
 		assert.Equal(t, "/test\\nplease", dict["trigger_comment"])
 	})
+}
+
+func TestTemplateDictCustomParams(t *testing.T) {
+	ev := testEvent(t, event.PullRequest)
+	dict := templateDict(ev, Params{"environment": "prod", "greeting": "hi"})
+
+	assert.Equal(t, "prod", dict["environment"], "custom params join the dictionary")
+	assert.Equal(t, "hi", dict["greeting"])
+	assert.Equal(t, "abcdef", dict["revision"], "built-in keys are untouched")
 }
 
 func TestToInfoEventLabeledAndComment(t *testing.T) {
