@@ -1,7 +1,9 @@
 ---
 # Link-check markdown on PRs touching .md files. The workspace is named
-# "repo" rather than "source" to show the single-workspace binding.
-# Try: pact run
+# "repo" rather than "source" to show the single-workspace binding, and
+# the docs-root param shows a custom param: it defaults to the docs dir
+# and --param docs-root=<dir> narrows the check.
+# Try: pact run --param docs-root=.
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
@@ -21,6 +23,8 @@ spec:
     params:
       - name: repo_url
       - name: revision
+      - name: docs-root
+        default: "docs"
     tasks:
       - name: check-links
         taskSpec:
@@ -56,7 +60,7 @@ spec:
                 #!/bin/sh
                 set -eu
                 fail=0
-                for doc in $(find . -name '*.md' -not -path './vendor/*'); do
+                for doc in $(find "$(params.docs-root)" -name '*.md' -not -path '*/vendor/*'); do
                   echo "checking $doc"
                   for link in $(grep -oE '\]\([^) ]+\)' "$doc" | sed -e 's/^](//' -e 's/)$//' | grep -vE '^(https?:|mailto:|#)' || true); do
                     target=${link%%#*}

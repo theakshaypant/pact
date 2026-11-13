@@ -109,6 +109,18 @@ Pipelines can match a CEL expression over the whole event; this one matches
 feature-titled PRs and builds and smoke-tests the binary. The expression
 sees the event type, branches, changed files and the parsed webhook body.
 
+### Supply custom params
+
+```bash
+pact run --provider kind --param docs-root=.
+```
+
+The docs pipeline declares a custom param: `docs-root` scopes its link
+check and defaults to the docs directory. `--param` overrides it,
+substituting `{{ docs-root }}` in the manifest and landing in the
+PipelineRun's `spec.params`. `--param` is repeatable and `--param-file`
+reads a dotenv file of them.
+
 ### Clean up
 
 ```bash
