@@ -134,3 +134,5 @@ Before running anything, `pact match` with the same event flags (e.g.
 `pact match --event push`) prints which pipelines an event would fire — add
 `-v` for why the rest were skipped — and `pact resolve` prints the hydrated
 YAML that would be submitted. Both run fully offline and need no cluster.
+The full CLI reference — every command, flag, default and exit code — lives
+in [docs/cli.md](docs/cli.md).
