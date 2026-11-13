@@ -144,3 +144,45 @@ func TestResolveNoMatchErrors(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no pipelinerun")
 }
+
+func TestResolveCustomParams(t *testing.T) {
+	// environment is wired through a {{ }} placeholder, greeting only
+	// through a declared pipelineSpec param: both must land in spec.params.
+	eng := New(nil, WithParams(Params{"environment": "prod", "greeting": "hi"}))
+	out, err := eng.Resolve(context.Background(), fixtureDir+"/params", matchEvent(t, event.PullRequest, nil))
+	require.NoError(t, err)
+
+	prs := parsePipelineRuns(t, string(out))
+	require.Len(t, prs, 1)
+
+	params := map[string]string{}
+	for _, p := range prs[0].Spec.Params {
+		params[p.Name] = p.Value.StringVal
+	}
+	assert.Equal(t, "prod", params["environment"], "{{ environment }} must be substituted")
+	assert.Equal(t, "hi", params["greeting"], "a declared param with no spec.params entry must be appended")
+	assert.NotContains(t, string(out), "{{", "no unsubstituted placeholders may remain")
+}
+
+func TestResolveCustomParamsUnknownIsAnError(t *testing.T) {
+	eng := New(nil, WithParams(Params{"environment": "prod", "typo": "x"}))
+	_, err := eng.Resolve(context.Background(), fixtureDir+"/params", matchEvent(t, event.PullRequest, nil))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrUnknownParams)
+	assert.Contains(t, err.Error(), `"typo"`)
+	assert.NotContains(t, err.Error(), `"environment"`, "used names must not be reported")
+}
+
+func TestResolveWithoutCustomParamsLeavesManifestAlone(t *testing.T) {
+	// Without params the {{ environment }} placeholder stays literal, as
+	// PAC leaves unknown keys: nothing errors, nothing is appended.
+	eng := New(nil)
+	out, err := eng.Resolve(context.Background(), fixtureDir+"/params", matchEvent(t, event.PullRequest, nil))
+	require.NoError(t, err)
+
+	prs := parsePipelineRuns(t, string(out))
+	require.Len(t, prs, 1)
+	require.Len(t, prs[0].Spec.Params, 1)
+	assert.Equal(t, "environment", prs[0].Spec.Params[0].Name)
+	assert.Equal(t, "{{ environment }}", prs[0].Spec.Params[0].Value.StringVal)
+}

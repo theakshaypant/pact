@@ -70,6 +70,23 @@ func (e *engine) Resolve(ctx context.Context, tektonDir string, ev *event.Event)
 	if err != nil {
 		return nil, fmt.Errorf("resolving pipelineruns (offline mode: remote tasks are not fetched): %w", err)
 	}
+
+	// Custom params: fail on names nothing matched uses (a typo would
+	// otherwise vanish silently), then merge the values into every
+	// PipelineRun before rendering, so resolve previews and run submits
+	// the same spec.params.
+	if len(e.params) > 0 {
+		if unknown := e.params.unknown(usedParamNames(resolved, res.matchedFileContent())); len(unknown) > 0 {
+			quoted := make([]string, len(unknown))
+			for i, name := range unknown {
+				quoted[i] = fmt.Sprintf("%q", name)
+			}
+			return nil, fmt.Errorf("resolving pipelines: %w: %s (no matched pipeline declares or references them)",
+				ErrUnknownParams, strings.Join(quoted, ", "))
+		}
+		applyParams(resolved, e.params)
+	}
+
 	out, err := renderPipelineRuns(resolved)
 	if err != nil {
 		return nil, fmt.Errorf("resolving pipelines: %w", err)
