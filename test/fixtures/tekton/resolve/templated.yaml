@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: templated
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+spec:
+  params:
+    - name: revision
+      value: "{{ revision }}"
+    - name: repo
+      value: "{{ repo_url }}"
+  pipelineSpec:
+    params:
+      - name: revision
+        type: string
+      - name: repo
+        type: string
+    tasks:
+      - name: show
+        taskSpec:
+          params:
+            - name: revision
+              type: string
+          steps:
+            - name: say
+              image: alpine:3.20
+              script: echo $(params.revision)

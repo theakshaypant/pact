@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: cel-label
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      body.pull_request.labels.exists(l, l.name == "kind/lgtm")
+spec:
+  pipelineSpec:
+    tasks:
+      - name: hello
+        taskSpec:
+          steps:
+            - name: say
+              image: alpine:3.20
+              script: echo cel label matched
