@@ -75,7 +75,7 @@ func runCLI(t *testing.T, snap *git.Snapshot, eng pac.Engine, args ...string) (s
 			insp.gotDir = dir
 			return insp, nil
 		},
-		newEngine: func(verbose bool) pac.Engine { return eng },
+		newEngine: func(bool, pac.Params) pac.Engine { return eng },
 		out:       &out,
 		errOut:    &errOut,
 	}
@@ -194,7 +194,7 @@ func TestTargetBranchFlagReachesInspector(t *testing.T) {
 	var out, errOut bytes.Buffer
 	d := deps{
 		openGit:   func(string) (git.Inspector, error) { return insp, nil },
-		newEngine: func(bool) pac.Engine { return fakeEng() },
+		newEngine: func(bool, pac.Params) pac.Engine { return fakeEng() },
 		out:       &out,
 		errOut:    &errOut,
 	}

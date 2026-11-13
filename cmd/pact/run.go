@@ -23,6 +23,7 @@ type runRunner interface {
 
 func newRunCmd(d deps, g *globalFlags) *cobra.Command {
 	var ef eventFlags
+	var pf paramFlags
 	var provider, kubeconfigPath, workspace, workspaceSize string
 	var keepCloneTasks, noCleanup bool
 	var timeout time.Duration
@@ -41,6 +42,9 @@ PipelineRun, streaming its task and step logs live with color-coded
 terminal or NO_COLOR is set). Tasks that fetch the repository (git-clone,
 fetch-repository, ...) are dropped since the source is pre-populated.
 
+Custom params (--param, --param-file) substitute {{ name }} placeholders
+and are merged into the PipelineRuns' spec.params before submission.
+
 The workspace bound to the source is the one named "source" if the
 pipeline declares it, else the single declared workspace; --workspace
 picks explicitly. The run namespace is deleted after a fully
@@ -51,7 +55,7 @@ successful run and kept for inspection when any run fails or
 			ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 			defer cancel()
 
-			p, err := prepare(ctx, d, g, ef)
+			p, err := prepare(ctx, d, g, ef, pf)
 			if err != nil {
 				return err
 			}
@@ -83,6 +87,7 @@ successful run and kept for inspection when any run fails or
 		},
 	}
 	ef.bind(cmd)
+	pf.bind(cmd)
 	cmd.Flags().StringVar(&provider, "provider", cluster.ProviderExternal,
 		"cluster provider (external or kind)")
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", "",

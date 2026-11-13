@@ -16,7 +16,7 @@ import (
 // deps carries the command wiring so tests can substitute fakes.
 type deps struct {
 	openGit    func(dir string) (git.Inspector, error)
-	newEngine  func(verbose bool) pac.Engine
+	newEngine  func(verbose bool, params pac.Params) pac.Engine
 	newCluster func(opts cluster.Options) (clusterManager, error)
 	newRunner  func(progress io.Writer) runRunner
 	out        io.Writer

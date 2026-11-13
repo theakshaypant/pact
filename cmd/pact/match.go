@@ -17,7 +17,7 @@ several matching runs is printed once). No match is a valid result: the
 output is empty and the exit code is 0.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			p, err := prepare(cmd.Context(), d, g, ef)
+			p, err := prepare(cmd.Context(), d, g, ef, paramFlags{})
 			if err != nil {
 				return err
 			}

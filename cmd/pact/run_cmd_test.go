@@ -41,7 +41,7 @@ func runCLIRunner(t *testing.T, snap *git.Snapshot, eng pac.Engine, mgr *fakeClu
 	var out, errOut bytes.Buffer
 	d := deps{
 		openGit: func(string) (git.Inspector, error) { return insp, nil },
-		newEngine: func(bool) pac.Engine {
+		newEngine: func(bool, pac.Params) pac.Engine {
 			return eng
 		},
 		newCluster: func(opts cluster.Options) (clusterManager, error) {

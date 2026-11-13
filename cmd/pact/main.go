@@ -29,8 +29,10 @@ func main() {
 // run builds the root command with real dependencies and executes it.
 func run(ctx context.Context, args []string, out, errOut io.Writer) error {
 	d := deps{
-		openGit:    git.Open,
-		newEngine:  func(verbose bool) pac.Engine { return pac.New(buildLogger(verbose, errOut)) },
+		openGit: git.Open,
+		newEngine: func(verbose bool, params pac.Params) pac.Engine {
+			return pac.New(buildLogger(verbose, errOut), pac.WithParams(params))
+		},
 		newCluster: func(opts cluster.Options) (clusterManager, error) { return cluster.New(opts) },
 		newRunner: func(progress io.Writer) runRunner {
 			return runner.New(runner.NewClient, progress)
