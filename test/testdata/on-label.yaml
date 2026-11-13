@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: on-label
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-label: "[kind/lgtm]"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: check
+        taskSpec:
+          steps:
+            - name: say
+              image: alpine:latest
+              script: echo label matched

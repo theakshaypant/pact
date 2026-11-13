@@ -1,0 +1,9 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: shared-task
+spec:
+  steps:
+    - name: run
+      image: alpine:latest
+      script: echo from shared task

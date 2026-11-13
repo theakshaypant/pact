@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: on-comment
+  annotations:
+    pipelinesascode.tekton.dev/on-comment: "^/test"
+spec:
+  params:
+    - name: comment
+      value: "{{ trigger_comment }}"
+  pipelineSpec:
+    params:
+      - name: comment
+    tasks:
+      - name: check
+        params:
+          - name: comment
+            value: $(params.comment)
+        taskSpec:
+          params:
+            - name: comment
+          steps:
+            - name: say
+              image: alpine:latest
+              script: echo $(params.comment)
