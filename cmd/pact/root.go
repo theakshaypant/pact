@@ -60,18 +60,18 @@ Commands:
 }
 
 // clusterOptions resolves the --provider and --kubeconfig flag pair into
-// cluster.Options. An explicit --kubeconfig selects a pre-existing
-// cluster, so it implies the external provider; combining it with an
-// explicitly requested other provider is an error rather than a silent
-// ignore.
-func clusterOptions(cmd *cobra.Command, provider, kubeconfig string) (cluster.Options, error) {
+// cluster.Options, with progress messages going to out. An explicit
+// --kubeconfig selects a pre-existing cluster, so it implies the external
+// provider; combining it with an explicitly requested other provider is an
+// error rather than a silent ignore.
+func clusterOptions(cmd *cobra.Command, out io.Writer, provider, kubeconfig string) (cluster.Options, error) {
 	if kubeconfig == "" {
-		return cluster.Options{Provider: provider}, nil
+		return cluster.Options{Provider: provider, Progress: out}, nil
 	}
 	if cmd.Flags().Changed("provider") && provider != cluster.ProviderExternal {
 		return cluster.Options{}, fmt.Errorf("--kubeconfig cannot be combined with --provider %s", provider)
 	}
-	return cluster.Options{Provider: cluster.ProviderExternal, Kubeconfig: kubeconfig}, nil
+	return cluster.Options{Provider: cluster.ProviderExternal, Kubeconfig: kubeconfig, Progress: out}, nil
 }
 
 // buildLogger returns a no-op logger, or a debug-level development logger

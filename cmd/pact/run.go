@@ -119,7 +119,7 @@ func planRuns(ctx context.Context, p *prepared) ([]*tektonv1.PipelineRun, error)
 
 // ensureCluster brings the cluster up and returns its kubeconfig.
 func ensureCluster(ctx context.Context, d deps, cmd *cobra.Command, provider, kubeconfigPath string) ([]byte, error) {
-	opts, err := clusterOptions(cmd, provider, kubeconfigPath)
+	opts, err := clusterOptions(cmd, d.out, provider, kubeconfigPath)
 	if err != nil {
 		return nil, err
 	}
