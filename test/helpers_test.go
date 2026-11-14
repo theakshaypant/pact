@@ -2,14 +2,12 @@
 // real git repository, runs the compiled pact binary against it and
 // validates the output, mirroring the test layout of
 // openshift-pipelines/pipelines-as-code (scenario files in test/, shared
-// harness packages in test/pkg/). Manifests for these scenarios live in
-// test/testdata/; the near-identical manifests under test/fixtures/
-// belong to the faster in-package unit tests in pkg/pac — the split is
-// deliberate, so keep the two trees in sync consciously.
+// harness packages in test/pkg/). Pipeline manifests are built with
+// test/pkg/pacdef, shared with the faster in-package unit tests in
+// pkg/pac; see manifests_test.go for this suite's scenarios.
 package test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -19,14 +17,6 @@ import (
 	"github.com/theakshaypant/pact/test/pkg/pactcli"
 	"github.com/theakshaypant/pact/test/pkg/tekton"
 )
-
-// manifest reads a .tekton manifest fixture from test/testdata.
-func manifest(t *testing.T, name string) string {
-	t.Helper()
-	b, err := os.ReadFile("testdata/" + name)
-	require.NoError(t, err)
-	return string(b)
-}
 
 // mustRun runs the pact binary in r's directory and requires a
 // successful exit.

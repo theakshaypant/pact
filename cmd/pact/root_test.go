@@ -13,6 +13,7 @@ import (
 	"github.com/theakshaypant/pact/pkg/event"
 	"github.com/theakshaypant/pact/pkg/git"
 	"github.com/theakshaypant/pact/pkg/pac"
+	"github.com/theakshaypant/pact/test/pkg/pacdef"
 )
 
 // fakeInspector returns a canned snapshot and records the options it got.
@@ -254,22 +255,7 @@ func TestEndToEndWithRealEngine(t *testing.T) {
 	dir := t.TempDir()
 	tekton := filepath.Join(dir, ".tekton")
 	require.NoError(t, os.MkdirAll(tekton, 0o755))
-	manifest := `apiVersion: tekton.dev/v1
-kind: PipelineRun
-metadata:
-  name: e2e-run
-  annotations:
-    pipelinesascode.tekton.dev/on-event: "[pull_request]"
-    pipelinesascode.tekton.dev/on-target-branch: "[main]"
-spec:
-  pipelineSpec:
-    tasks:
-      - name: hello
-        taskSpec:
-          steps:
-            - name: say
-              script: echo hello
-`
+	manifest := pacdef.PipelineRun("e2e-run").OnPullRequest("main").YAML()
 	require.NoError(t, os.WriteFile(filepath.Join(tekton, "e2e.yaml"), []byte(manifest), 0o644))
 
 	eng := pac.New(nil)

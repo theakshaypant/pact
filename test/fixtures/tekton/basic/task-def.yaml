@@ -1,9 +1,0 @@
-apiVersion: tekton.dev/v1
-kind: Task
-metadata:
-  name: local-task
-spec:
-  steps:
-    - name: run
-      image: alpine:3.20
-      script: echo local task

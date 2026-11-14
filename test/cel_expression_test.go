@@ -20,7 +20,7 @@ func TestCELBodyTitle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := setupFeatureBranch(t, tt.title)
-			r.WriteTekton("cel.yaml", manifest(t, "cel-body-title.yaml"))
+			r.WriteTekton("cel.yaml", celTitle().YAML())
 			if tt.wantMatch {
 				assert.Equal(t, "cel.yaml\n", mustMatch(t, r))
 			} else {
@@ -80,7 +80,7 @@ func TestCELFilesGoChangedClasses(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := setupFeatureBranchChanging(t, "docs/feature.md", "notes", "feat: add local testing")
-			r.WriteTekton("cel.yaml", manifest(t, "cel-files-go.yaml"))
+			r.WriteTekton("cel.yaml", celGoFiles().YAML())
 			tt.change(r)
 			if tt.match {
 				assert.Equal(t, "cel.yaml\n", mustMatch(t, r))
@@ -95,6 +95,6 @@ func TestCELMalformedExpressionSkipsManifest(t *testing.T) {
 	// A syntactically broken CEL expression makes PAC skip the
 	// PipelineRun rather than fail the command: exit 0, no output.
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("badcel.yaml", manifest(t, "cel-malformed.yaml"))
+	r.WriteTekton("badcel.yaml", badCEL().YAML())
 	assert.Empty(t, mustMatch(t, r))
 }

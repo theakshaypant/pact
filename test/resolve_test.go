@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/theakshaypant/pact/test/pkg/pacdef"
 	"github.com/theakshaypant/pact/test/pkg/pactcli"
 	"github.com/theakshaypant/pact/test/pkg/tekton"
 )
@@ -13,8 +14,8 @@ func TestResolveInlinesTaskAcrossFiles(t *testing.T) {
 	// The Task lives in one .tekton file and is referenced by name from
 	// the PipelineRun in another; resolve must inline it.
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("task.yaml", manifest(t, "task-definition.yaml"))
-	r.WriteTekton("pipeline.yaml", manifest(t, "pipeline-referencing-task.yaml"))
+	r.WriteTekton("task.yaml", sharedTask().YAML())
+	r.WriteTekton("pipeline.yaml", taskRefPipeline().YAML())
 
 	// Only the file containing a matching PipelineRun is listed.
 	assert.Equal(t, "pipeline.yaml\n", mustMatch(t, r))
@@ -32,7 +33,7 @@ func TestResolveInlinesTaskAcrossFiles(t *testing.T) {
 
 func TestResolveSubstitutesTemplateParams(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("templated.yaml", manifest(t, "templated-params.yaml"))
+	r.WriteTekton("templated.yaml", pacdef.Templated().YAML())
 
 	// Raw stdout is needed for the no-leftover-placeholders assertion, so
 	// this scenario decodes and validates by hand instead of resolveRuns.
@@ -53,7 +54,7 @@ func TestResolveSubstitutesTemplateParams(t *testing.T) {
 
 func TestResolveNoMatchFails(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("pr.yaml", manifest(t, "pr-other-branch.yaml"))
+	r.WriteTekton("pr.yaml", prOtherBranch().YAML())
 
 	res := pactcli.Run(t, "-C", r.Dir, "resolve")
 	assert.Equal(t, 1, res.ExitCode)
