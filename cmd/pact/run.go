@@ -24,6 +24,7 @@ type runRunner interface {
 func newRunCmd(d deps, g *globalFlags) *cobra.Command {
 	var ef eventFlags
 	var pf paramFlags
+	var sf secretFlags
 	var provider, kubeconfigPath, workspace, workspaceSize string
 	var keepCloneTasks, noCleanup bool
 	var timeout time.Duration
@@ -45,6 +46,11 @@ fetch-repository, ...) are dropped since the source is pre-populated.
 Custom params (--param, --param-file) substitute {{ name }} placeholders
 and are merged into the PipelineRuns' spec.params before submission.
 
+Secrets (--secret, --secret-file) are created as Kubernetes Secrets in
+the run namespace before submission, so manifests consume them the
+standard Tekton way (secretKeyRef, envFrom, volumes, workspaces,
+imagePullSecrets); they are deleted with the namespace.
+
 The workspace bound to the source is the one named "source" if the
 pipeline declares it, else the single declared workspace; --workspace
 picks explicitly. The run namespace is deleted after a fully
@@ -52,6 +58,13 @@ successful run and kept for inspection when any run fails or
 --no-cleanup is passed.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Secrets are parsed before any git work so a bad flag fails
+			// fast — their values must not reach the engine.
+			secrets, err := sf.toSecrets()
+			if err != nil {
+				return err
+			}
+
 			ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
 			defer cancel()
 
@@ -79,6 +92,7 @@ successful run and kept for inspection when any run fails or
 				WorkspaceSize:  workspaceSize,
 				KeepCloneTasks: keepCloneTasks,
 				NoCleanup:      noCleanup,
+				Secrets:        secrets,
 			})
 			if err != nil {
 				return err
@@ -88,6 +102,7 @@ successful run and kept for inspection when any run fails or
 	}
 	ef.bind(cmd)
 	pf.bind(cmd)
+	sf.bind(cmd)
 	cmd.Flags().StringVar(&provider, "provider", cluster.ProviderExternal,
 		"cluster provider (external or kind)")
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", "",

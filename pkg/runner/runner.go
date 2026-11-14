@@ -11,6 +11,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -43,6 +45,9 @@ type Options struct {
 	KeepCloneTasks bool
 	// NoCleanup keeps the run namespace even when every run succeeded.
 	NoCleanup bool
+	// Secrets are created in the run namespace before the runs are
+	// submitted, so manifests can consume them by name.
+	Secrets Secrets
 }
 
 // PipelineRunResult is the outcome of one executed PipelineRun.
@@ -101,6 +106,14 @@ func (r *Runner) Run(ctx context.Context, kubeconfig []byte, runs []*tektonv1.Pi
 		opts.WorkspaceSize = DefaultWorkspaceSize
 	}
 
+	// The unsupplied-reference check is pure, so it warns before any
+	// cluster work: a pod referencing a missing secret would hang until
+	// the timeout.
+	if missing := opts.Secrets.missing(runs); len(missing) > 0 {
+		r.printf("warning: pipelines reference secret(s) not supplied with --secret/--secret-file: %s "+
+			"(pods hang in CreateContainerConfigError without them)\n", strings.Join(missing, ", "))
+	}
+
 	client, err := r.newClient(kubeconfig)
 	if err != nil {
 		return Result{}, fmt.Errorf("building kubernetes clients: %w", err)
@@ -126,6 +139,9 @@ func (r *Runner) Run(ctx context.Context, kubeconfig []byte, runs []*tektonv1.Pi
 	if err := client.CreatePVC(ctx, ns, pvcName, opts.WorkspaceSize); err != nil {
 		return res, fmt.Errorf("preparing source volume: %w", err)
 	}
+	if err := r.createSecrets(ctx, client, ns, opts.Secrets); err != nil {
+		return res, err
+	}
 
 	r.printf("packaging source from %s\n", opts.RepoRoot)
 	var archive bytes.Buffer
@@ -146,6 +162,19 @@ func (r *Runner) Run(ctx context.Context, kubeconfig []byte, runs []*tektonv1.Pi
 		res.Runs = append(res.Runs, run)
 	}
 	return res, nil
+}
+
+// createSecrets creates the supplied secrets in the run namespace,
+// sorted by name. Progress names the secret and its key count but never
+// a value.
+func (r *Runner) createSecrets(ctx context.Context, client Client, ns string, secrets Secrets) error {
+	for _, name := range slices.Sorted(maps.Keys(secrets)) {
+		if err := client.CreateSecret(ctx, ns, name, secrets[name]); err != nil {
+			return err
+		}
+		r.printf("created secret %s (%d keys)\n", name, len(secrets[name]))
+	}
+	return nil
 }
 
 // finish applies the namespace cleanup policy after the runs: the

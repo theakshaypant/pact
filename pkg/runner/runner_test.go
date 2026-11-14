@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -27,12 +28,20 @@ type fakeClient struct {
 	submitted         []*tektonv1.PipelineRun
 	followResults     map[string]waitResult
 	deletedNamespaces []string
+	createdSecrets    []createdSecret
 
 	ensureNSErr error
 	pvcErr      error
 	uploadErr   error
 	getErr      error // persistent GetPipelineRun error
 	deleteErr   error
+	secretErr   error
+}
+
+// createdSecret records one CreateSecret call.
+type createdSecret struct {
+	ns, name string
+	data     map[string]string
 }
 
 type waitResult struct {
@@ -48,6 +57,14 @@ func (f *fakeClient) EnsureNamespace(_ context.Context, name string) error {
 func (f *fakeClient) CreatePVC(_ context.Context, ns, name, size string) error {
 	f.pvcNS, f.pvcName, f.pvcSize = ns, name, size
 	return f.pvcErr
+}
+
+func (f *fakeClient) CreateSecret(_ context.Context, ns, name string, data map[string]string) error {
+	f.createdSecrets = append(f.createdSecrets, createdSecret{ns: ns, name: name, data: data})
+	if f.secretErr != nil {
+		return fmt.Errorf("creating secret %s in %s: %w", name, ns, f.secretErr)
+	}
+	return nil
 }
 
 func (f *fakeClient) UploadSource(_ context.Context, ns, _ string, archive io.Reader) error {
