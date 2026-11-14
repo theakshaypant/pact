@@ -12,7 +12,7 @@ func TestRemoteTaskRefFailsOffline(t *testing.T) {
 	// nowhere in .tekton: matching succeeds (it only reads annotations)
 	// but offline resolution must fail loudly.
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("pipeline.yaml", manifest(t, "pipeline-referencing-task.yaml"))
+	r.WriteTekton("pipeline.yaml", taskRefPipeline().YAML())
 
 	assert.Equal(t, "pipeline.yaml\n", mustMatch(t, r))
 

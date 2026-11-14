@@ -5,13 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/theakshaypant/pact/test/pkg/pacdef"
 	"github.com/theakshaypant/pact/test/pkg/pactcli"
 	"github.com/theakshaypant/pact/test/pkg/tekton"
 )
 
 func TestLabelEventMatchAndResolve(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("label.yaml", manifest(t, "on-label.yaml"))
+	r.WriteTekton("label.yaml", pacdef.Labeled().YAML())
 
 	// The labeled event matches, and a plain pull request or a different
 	// label does not.
@@ -26,7 +27,7 @@ func TestLabelEventMatchAndResolve(t *testing.T) {
 
 func TestCommentEventMatchAndResolve(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("comment.yaml", manifest(t, "on-comment.yaml"))
+	r.WriteTekton("comment.yaml", pacdef.Comment().YAML())
 
 	assert.Equal(t, "comment.yaml\n", mustMatch(t, r, "--comment", "/test please"))
 	assert.Empty(t, mustMatch(t, r, "--comment", "unrelated chatter"))
@@ -41,7 +42,7 @@ func TestCommentEventMatchAndResolve(t *testing.T) {
 
 func TestLabelAndCommentAreMutuallyExclusive(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("label.yaml", manifest(t, "on-label.yaml"))
+	r.WriteTekton("label.yaml", pacdef.Labeled().YAML())
 
 	res := pactcli.Run(t, "-C", r.Dir, "match", "--label", "kind/lgtm", "--comment", "/test")
 	assert.NotEqual(t, 0, res.ExitCode)

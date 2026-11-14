@@ -10,7 +10,7 @@ import (
 
 func TestPushToMainMatchesAndResolves(t *testing.T) {
 	r := setupMainBranch(t)
-	r.WriteTekton("push.yaml", manifest(t, "push-basic.yaml"))
+	r.WriteTekton("push.yaml", pushBasic().YAML())
 	// An uncommitted change on main: exactly the state a push would carry.
 	r.WriteWorktree("ci.txt", "uncommitted")
 
@@ -25,7 +25,7 @@ func TestPushToFeatureBranchDoesNotMatchMainTarget(t *testing.T) {
 	// A push event targets the branch being pushed to; a push from feature
 	// does not satisfy a manifest targeting main.
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("push.yaml", manifest(t, "push-basic.yaml"))
+	r.WriteTekton("push.yaml", pushBasic().YAML())
 
 	assert.Empty(t, mustMatch(t, r, "--event", "push"))
 }

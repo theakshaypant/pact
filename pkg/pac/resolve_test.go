@@ -33,7 +33,7 @@ func parsePipelineRuns(t *testing.T, docs string) []*tektonv1.PipelineRun {
 
 func TestResolveBasicInlinesLocalTask(t *testing.T) {
 	eng := New(nil)
-	out, err := eng.Resolve(context.Background(), fixtureDir+"/basic", matchEvent(t, event.PullRequest, []string{"src/main.go"}))
+	out, err := eng.Resolve(context.Background(), basicDir(t), matchEvent(t, event.PullRequest, []string{"src/main.go"}))
 	require.NoError(t, err)
 
 	prs := parsePipelineRuns(t, string(out))
@@ -67,7 +67,7 @@ func TestResolveBasicInlinesLocalTask(t *testing.T) {
 
 func TestResolveTemplatedParams(t *testing.T) {
 	eng := New(nil)
-	out, err := eng.Resolve(context.Background(), fixtureDir+"/resolve", matchEvent(t, event.PullRequest, nil))
+	out, err := eng.Resolve(context.Background(), templatedDir(t), matchEvent(t, event.PullRequest, nil))
 	require.NoError(t, err)
 
 	prs := parsePipelineRuns(t, string(out))
@@ -91,7 +91,7 @@ func TestResolveTemplatedParams(t *testing.T) {
 func TestResolveCommentSubstitutesTriggerComment(t *testing.T) {
 	eng := New(nil)
 	ev := matchEventOpts(t, event.Options{Comment: "/test please"}, nil)
-	out, err := eng.Resolve(context.Background(), fixtureDir+"/labelcomment", ev)
+	out, err := eng.Resolve(context.Background(), labelCommentDir(t), ev)
 	require.NoError(t, err)
 
 	prs := parsePipelineRuns(t, string(out))
@@ -119,7 +119,7 @@ func TestResolveNoMatchDescribesEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			eng := New(nil)
 			ev := matchEventOpts(t, tt.opts, nil)
-			_, err := eng.Resolve(context.Background(), fixtureDir+"/nomatch", ev)
+			_, err := eng.Resolve(context.Background(), nomatchDir(t), ev)
 			require.Error(t, err)
 			for _, want := range tt.want {
 				assert.Contains(t, err.Error(), want)
@@ -131,7 +131,7 @@ func TestResolveNoMatchDescribesEvent(t *testing.T) {
 func TestResolveRemoteRefFailsOffline(t *testing.T) {
 	ev := matchEvent(t, event.PullRequest, nil)
 	eng := New(nil)
-	_, err := eng.Resolve(context.Background(), fixtureDir+"/remote", ev)
+	_, err := eng.Resolve(context.Background(), remoteDir(t), ev)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot find referenced task")
 	assert.Contains(t, err.Error(), "offline mode")
@@ -140,7 +140,7 @@ func TestResolveRemoteRefFailsOffline(t *testing.T) {
 func TestResolveNoMatchErrors(t *testing.T) {
 	ev := matchEvent(t, event.Push, nil)
 	eng := New(nil)
-	_, err := eng.Resolve(context.Background(), fixtureDir+"/nomatch", ev)
+	_, err := eng.Resolve(context.Background(), nomatchDir(t), ev)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no pipelinerun")
 }
@@ -149,7 +149,7 @@ func TestResolveCustomParams(t *testing.T) {
 	// environment is wired through a {{ }} placeholder, greeting only
 	// through a declared pipelineSpec param: both must land in spec.params.
 	eng := New(nil, WithParams(Params{"environment": "prod", "greeting": "hi"}))
-	out, err := eng.Resolve(context.Background(), fixtureDir+"/params", matchEvent(t, event.PullRequest, nil))
+	out, err := eng.Resolve(context.Background(), paramsDir(t), matchEvent(t, event.PullRequest, nil))
 	require.NoError(t, err)
 
 	prs := parsePipelineRuns(t, string(out))
@@ -166,7 +166,7 @@ func TestResolveCustomParams(t *testing.T) {
 
 func TestResolveCustomParamsUnknownIsAnError(t *testing.T) {
 	eng := New(nil, WithParams(Params{"environment": "prod", "typo": "x"}))
-	_, err := eng.Resolve(context.Background(), fixtureDir+"/params", matchEvent(t, event.PullRequest, nil))
+	_, err := eng.Resolve(context.Background(), paramsDir(t), matchEvent(t, event.PullRequest, nil))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnknownParams)
 	assert.Contains(t, err.Error(), `"typo"`)
@@ -177,7 +177,7 @@ func TestResolveWithoutCustomParamsLeavesManifestAlone(t *testing.T) {
 	// Without params the {{ environment }} placeholder stays literal, as
 	// PAC leaves unknown keys: nothing errors, nothing is appended.
 	eng := New(nil)
-	out, err := eng.Resolve(context.Background(), fixtureDir+"/params", matchEvent(t, event.PullRequest, nil))
+	out, err := eng.Resolve(context.Background(), paramsDir(t), matchEvent(t, event.PullRequest, nil))
 	require.NoError(t, err)
 
 	prs := parsePipelineRuns(t, string(out))

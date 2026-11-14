@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/theakshaypant/pact/test/pkg/pacdef"
 	"github.com/theakshaypant/pact/test/pkg/pactcli"
 	"github.com/theakshaypant/pact/test/pkg/tekton"
 )
@@ -21,7 +22,7 @@ func writeParamsFile(t *testing.T, content string) string {
 
 func TestResolveCustomParamsFromFlags(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("params.yaml", manifest(t, "custom-params.yaml"))
+	r.WriteTekton("params.yaml", pacdef.CustomParams().YAML())
 
 	prs := resolveRuns(t, r, "--param", "environment=prod", "--param", "greeting=hi")
 	require.Len(t, prs, 1)
@@ -36,7 +37,7 @@ func TestResolveCustomParamsFromFlags(t *testing.T) {
 
 func TestResolveCustomParamsFromFileWithFlagOverride(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("params.yaml", manifest(t, "custom-params.yaml"))
+	r.WriteTekton("params.yaml", pacdef.CustomParams().YAML())
 	file := writeParamsFile(t, "# deployment settings\nenvironment=staging\ngreeting=hello\n")
 
 	prs := resolveRuns(t, r, "--param-file", file, "--param", "environment=prod")
@@ -52,7 +53,7 @@ func TestResolveCustomParamsFromFileWithFlagOverride(t *testing.T) {
 
 func TestResolveUnknownCustomParamFails(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("params.yaml", manifest(t, "custom-params.yaml"))
+	r.WriteTekton("params.yaml", pacdef.CustomParams().YAML())
 
 	res := pactcli.Run(t, "-C", r.Dir, "resolve", "--param", "environment=prod", "--param", "greetin=x")
 	assert.Equal(t, 1, res.ExitCode)
@@ -64,7 +65,7 @@ func TestResolveUnknownCustomParamFails(t *testing.T) {
 
 func TestResolveParamShadowingBuiltinFails(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("params.yaml", manifest(t, "custom-params.yaml"))
+	r.WriteTekton("params.yaml", pacdef.CustomParams().YAML())
 
 	res := pactcli.Run(t, "-C", r.Dir, "resolve", "--param", "revision=x")
 	assert.Equal(t, 1, res.ExitCode)
@@ -73,7 +74,7 @@ func TestResolveParamShadowingBuiltinFails(t *testing.T) {
 
 func TestResolveMissingParamFileFails(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("params.yaml", manifest(t, "custom-params.yaml"))
+	r.WriteTekton("params.yaml", pacdef.CustomParams().YAML())
 
 	res := pactcli.Run(t, "-C", r.Dir, "resolve", "--param-file", filepath.Join(t.TempDir(), "nope.env"))
 	assert.Equal(t, 1, res.ExitCode)
@@ -82,7 +83,7 @@ func TestResolveMissingParamFileFails(t *testing.T) {
 
 func TestResolveWithoutParamsLeavesPlaceholders(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
-	r.WriteTekton("params.yaml", manifest(t, "custom-params.yaml"))
+	r.WriteTekton("params.yaml", pacdef.CustomParams().YAML())
 
 	// An unsupplied custom param stays a literal {{ }} placeholder, the
 	// same way PAC leaves unknown keys; the run still resolves.

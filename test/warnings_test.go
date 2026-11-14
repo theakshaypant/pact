@@ -9,7 +9,7 @@ import (
 func TestNonGitHubRemoteWarnsButStillMatches(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
 	r.SetOrigin("https://gitlab.com/group/repo.git", nil, "")
-	r.WriteTekton("pr.yaml", manifest(t, "pull-request-basic.yaml"))
+	r.WriteTekton("pr.yaml", prBasic().YAML())
 
 	res := mustRun(t, r, "match")
 	assert.Equal(t, "pr.yaml\n", res.Stdout)
@@ -20,7 +20,7 @@ func TestNonGitHubRemoteWarnsButStillMatches(t *testing.T) {
 func TestDetachedHEADWarnsButStillMatches(t *testing.T) {
 	r := setupFeatureBranch(t, "feat: add local testing")
 	r.CheckoutDetached(r.Head())
-	r.WriteTekton("pr.yaml", manifest(t, "pull-request-basic.yaml"))
+	r.WriteTekton("pr.yaml", prBasic().YAML())
 
 	res := mustRun(t, r, "match")
 	assert.Equal(t, "pr.yaml\n", res.Stdout)
