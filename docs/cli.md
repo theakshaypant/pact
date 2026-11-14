@@ -21,7 +21,7 @@ No command takes positional arguments.
 | --- | --- | --- | --- | --- |
 | [`match`](#match) | yes | – | – | – |
 | [`resolve`](#resolve) | yes | yes | – | – |
-| [`run`](#run) | yes | yes | yes | `--workspace`, `--workspace-size`, `--keep-clone-tasks`, `--no-cleanup` |
+| [`run`](#run) | yes | yes | yes | `--workspace`, `--workspace-size`, `--keep-clone-tasks`, `--no-cleanup`, `--secret`, `--secret-file` |
 | [`up`](#up) | – | – | yes | `--tekton-version` |
 | [`down`](#down) | – | – | yes | `--force` |
 
@@ -53,6 +53,8 @@ Takes the [event flags](#event-flags), [param flags](#param-flags) and
 | `--workspace-size <size>` | `1Gi` | Size of the source workspace volume. |
 | `--keep-clone-tasks` | off | Do not drop repository-fetching tasks. |
 | `--no-cleanup` | off | Keep the run namespace even when every run succeeded. |
+| `--secret <name.key=value>` | – | Kubernetes Secret value (repeatable; a later flag wins); see [Secrets](#secrets). |
+| `--secret-file <path>` | – | Dotenv file (`name.key=value` lines) of secret values; `--secret` overrides it on the same `name.key`; see [Secrets](#secrets). |
 | `--timeout <duration>` | `30m` | Maximum time to wait for the cluster and the runs. |
 
 Matches and resolves first; no match prints `no matching pipelines` and
@@ -171,6 +173,44 @@ pair of surrounding quotes stripped; later line wins; no escapes, inline
 comments or `export`. A line without `=`, or with an empty name, errors
 with its file and line number. The path is relative to the working
 directory, not `--dir`.
+
+## Secrets
+
+Run only. Each supplied `name.key=value` becomes a real Kubernetes
+Secret in the run namespace — secret name before the first dot, key
+after — created before the PipelineRuns are submitted and deleted with
+the namespace. Manifests consume them the standard Tekton way:
+
+```yaml
+env:
+  - name: TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: db
+        key: password
+```
+
+`secretKeyRef` env vars, `envFrom`, secret volumes, secret-backed
+workspaces and `imagePullSecrets` all resolve. A secret whose only key
+is `.dockerconfigjson` is typed `kubernetes.io/dockerconfigjson`, which
+the kubelet requires of image pull secrets.
+
+- A `--secret` value splits at the first `=`: trimmed `name.key`,
+  verbatim value (may be empty, may contain `=`). Keys may contain dots:
+  `regcred..dockerconfigjson` is the secret `regcred`, key
+  `.dockerconfigjson`.
+- Names must be DNS-1123 labels, keys valid ConfigMap keys. A missing
+  `.`, a bad name or key, or an explicitly empty `--secret-file`:
+  error.
+- `--secret-file` uses the dotenv grammar of `--param-file`; `--secret`
+  overrides it on the same `name.key`. The path is relative to the
+  working directory.
+- Before submitting, `run` warns when the pipelines reference a secret
+  that was not supplied — such a pod hangs in
+  CreateContainerConfigError until the timeout. Optional references and
+  `$(params.x)` names are not warned about.
+- Values never appear in pact's output; shell history and process
+  arguments do expose `--secret`, so prefer `--secret-file`.
 
 ## Cluster flags
 

@@ -33,6 +33,8 @@ type Client interface {
 	EnsureNamespace(ctx context.Context, name string) error
 	// CreatePVC creates the source workspace claim.
 	CreatePVC(ctx context.Context, ns, name, size string) error
+	// CreateSecret creates a secret holding data in namespace ns.
+	CreateSecret(ctx context.Context, ns, name string, data map[string]string) error
 	// UploadSource streams a gzipped tar archive into the PVC pvcName
 	// in namespace ns, untarring it at the volume root via a short-lived
 	// pod.
@@ -132,6 +134,14 @@ func (k *kubeClient) CreatePVC(ctx context.Context, ns, name, size string) error
 	_, err = k.core.CoreV1().PersistentVolumeClaims(ns).Create(ctx, pvc, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("creating pvc %s in %s: %w", name, ns, err)
+	}
+	return nil
+}
+
+func (k *kubeClient) CreateSecret(ctx context.Context, ns, name string, data map[string]string) error {
+	_, err := k.core.CoreV1().Secrets(ns).Create(ctx, newSecret(name, data), metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("creating secret %s in %s: %w", name, ns, err)
 	}
 	return nil
 }
